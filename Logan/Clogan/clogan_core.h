@@ -51,10 +51,11 @@ extern "C"
  @param max_file  指定最大文件大小
  @param encrypt_key16 指定16位的文件加密key
  @param encrypt_iv16 16位的文件加密iv
+ @param log_save_type 日志保存策略 (LOGAN_SAVE_STOP 则不写入)
  */
 int
 clogan_init(const char *cache_dirs, const char *path_dirs, int max_file, const char *encrypt_key16,
-            const char *encrypt_iv16);
+            const char *encrypt_iv16, const int log_save_type);
 
 /**
  @brief 打开一个文件的写入

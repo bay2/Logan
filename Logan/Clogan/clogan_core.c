@@ -179,7 +179,7 @@ void read_mmap_data_clogan(const char *path_dirs) {
  */
 int
 clogan_init(const char *cache_dirs, const char *path_dirs, int max_file, const char *encrypt_key16,
-            const char *encrypt_iv16) {
+            const char *encrypt_iv16, const int log_save_type) {
     int back = CLOGAN_INIT_FAIL_HEADER;
     if (is_init_ok ||
         NULL == cache_dirs || strnlen(cache_dirs, 11) == 0 ||
@@ -296,6 +296,7 @@ clogan_init(const char *cache_dirs, const char *path_dirs, int max_file, const c
             logan_model = malloc(sizeof(cLogan_model));
             if (NULL != logan_model) { //堆非空判断 , 如果为null , 就失败
                 memset(logan_model, 0, sizeof(cLogan_model));
+                logan_model->save_type = log_save_type;
             } else {
                 is_init_ok = 0;
                 printf_clogan("clogan_init > malloc memory fail for logan_model\n");
@@ -688,11 +689,25 @@ clogan_write(int flag, char *log, long long local_time, char *thread_name, long 
     }
 
     if (is_file_exist_clogan(logan_model->file_path)) {
+
         if (logan_model->file_len > max_file_len) {
-            printf_clogan("clogan_write > beyond max file , cant write log\n");
-            back = CLOAGN_WRITE_FAIL_MAXFILE;
-            return back;
+
+            if (logan_model->save_type == LOGAN_SAVE_CLEAR) {
+
+                FILE *file_tmp = fopen(logan_model->file_path, "w");
+                if (file_tmp) {
+                    fclose(file_tmp);
+                    logan_model->file_len = 0;
+                }
+
+            } else {
+                printf_clogan("clogan_write > beyond max file , cant write log\n");
+                back = CLOAGN_WRITE_FAIL_MAXFILE;
+                return back;
+            }
+
         }
+
     } else {
         if (logan_model->file_stream_type == LOGAN_FILE_OPEN) {
             fclose(logan_model->file);

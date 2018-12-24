@@ -68,6 +68,7 @@ const decodeLog = (buf, skips) => {
         decodeLog(buf, skips);
         return;
       }
+      console.log('contentLen' + contentLen);
       const content = buf.slice(skips, skips + contentLen);
       skips += contentLen;
       // decipher

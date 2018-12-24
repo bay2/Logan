@@ -35,6 +35,7 @@ BOOL LOGANUSEASL = NO;
 NSData *__AES_KEY;
 NSData *__AES_IV;
 uint64_t __max_file;
+int __log_save_type;
 
 
 @interface Logan : NSObject {
@@ -58,10 +59,11 @@ uint64_t __max_file;
 - (void)filePatchForDate:(NSString *)date block:(LoganFilePatchBlock)filePatchBlock;
 @end
 
-void loganInit(NSData *_Nonnull aes_key16, NSData *_Nonnull aes_iv16, uint64_t max_file) {
+void loganInit(NSData *_Nonnull aes_key16, NSData *_Nonnull aes_iv16, uint64_t max_file, int log_save_type) {
     __AES_KEY = aes_iv16;
     __AES_IV = aes_iv16;
     __max_file = max_file;
+    __log_save_type = log_save_type;
 }
 
 void logan(NSUInteger type, NSString *_Nonnull log) {
@@ -126,7 +128,7 @@ NSString *_Nonnull loganTodaysDate(void) {
     
     const char *aeskey = (const char *)[__AES_KEY bytes];
     const char *aesiv = (const char *)[__AES_IV bytes];
-    clogan_init(path, path, (int)__max_file, aeskey, aesiv);
+    clogan_init(path, path, (int)__max_file, aeskey, aesiv, __log_save_type);
     NSString *today = [Logan currentDate];
     clogan_open((char *)today.UTF8String);
     __AES_KEY = nil;

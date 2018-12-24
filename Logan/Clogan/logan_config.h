@@ -57,6 +57,9 @@
 #define LOGAN_FILE_OPEN 1
 #define LOGAN_FILE_CLOSE 2
 
+#define LOGAN_SAVE_STOP 0 //超过最大大小后,日志将不再被写入
+#define LOGAN_SAVE_CLEAR 1 //超过最大大小后,清空老数据
+
 #define CLOGAN_EMPTY_FILE 0
 
 #define CLOGAN_VERSION_NUMBER 3 //Logan的版本号(2)版本
@@ -72,6 +75,7 @@ typedef struct logan_model_struct {
     int remain_data_len; //剩余空间长度
 
     int is_ready_gzip; //是否可以gzip
+    int save_type; //日志存储策略
 
     int file_stream_type; //文件流类型
     FILE *file; //文件流

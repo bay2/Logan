@@ -22,6 +22,9 @@
 
 #import <Foundation/Foundation.h>
 
+#define LOGAN_SAVE_STOP 0 //超过最大大小后,日志将不再被写入
+#define LOGAN_SAVE_CLEAR 1 //超过最大大小后,清空老数据
+
 extern void loganUseASL(BOOL b);
 
 
@@ -39,7 +42,7 @@ typedef void (^LoganFilePatchBlock)(NSString *_Nullable filePatch);
  @param aes_iv16  16位aes加密iv
  @param max_file  日志文件最大大小，超过该大小后日志将不再被写入，单位：byte。
  */
-extern void loganInit(NSData *_Nonnull aes_key16, NSData *_Nonnull aes_iv16, uint64_t max_file);
+extern void loganInit(NSData *_Nonnull aes_key16, NSData *_Nonnull aes_iv16, uint64_t max_file, int log_save_type);
 /**
  记录Logan日志
  
