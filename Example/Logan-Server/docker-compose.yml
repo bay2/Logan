@@ -1,0 +1,15 @@
+version: '3.1'
+
+services:
+
+  logan-server:
+    image: registry.cn-hangzhou.aliyuncs.com/sim_cat/logan-server:latest
+    container_name: logan_server
+    restart: always
+    ports:
+      - 8083:3000
+    volumes:
+      - ~/logan-server:/code/log
+
+
+

@@ -25,8 +25,12 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 const crypto = require('crypto');
 const zlib = require('zlib');
+var path = require("path");  
+var logPath = './log/'
 
 const app = express();
+app.timeout = 1000;
+
 
 app.use(bodyParser.raw({
   type: 'binary/octet-stream',
@@ -37,22 +41,51 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
+//递归创建目录 同步方法  
+function mkdirsSync(dirname) {  
+  //console.log(dirname);  
+  if (fs.existsSync(dirname)) {  
+      return true;  
+  } else {  
+      if (mkdirsSync(path.dirname(dirname))) {  
+          fs.mkdirSync(dirname);  
+          return true;  
+      }  
+  }  
+}  
+
+
 app.post('/logupload', (req, res) => {
   console.log('Logan client upload log file');
   if (!req.body) {
     return res.sendStatus(400);
   }
-  if (fs.existsSync('./log-demo.txt')) {
-    fs.unlinkSync('./log-demo.txt');
+
+  logPath = './log/';
+
+  const fileName = req.header('fileName');
+  const filePath = req.header('filePath');
+  logPath = logPath + filePath + '/';
+
+  if (!fs.existsSync(logPath)) {
+    mkdirsSync(logPath);
+  }
+
+  if (fs.existsSync(logPath + fileName + '.txt')) {
+    fs.unlinkSync(logPath + fileName + '.txt');
   }
   // decode log
-  decodeLog(req.body, 0);
+  decodeLog(req.body, 0, fileName);
   // haha
   console.log('decode log file complete');
   res.json({ success: true });
 });
 
-const decodeLog = (buf, skips) => {
+const decodeLog = (buf, skips, fileName) => {
+
+  const logTxt = logPath + fileName + '.txt';
+  const logGZ = logPath + fileName + '.gz';
+
   if (skips < buf.length) {
     const start = buf.readUInt8(skips);
     skips++;
@@ -65,21 +98,28 @@ const decodeLog = (buf, skips) => {
       skips += 4;
       if (skips + contentLen > buf.length) {
         skips -= 4;
-        decodeLog(buf, skips);
+        decodeLog(buf, skips, fileName);
         return;
       }
+      console.log('contentLen:' + contentLen);
       const content = buf.slice(skips, skips + contentLen);
       skips += contentLen;
       // decipher
-      const decipher = crypto.createDecipheriv('aes-128-cbc', '0123456789012345', '0123456789012345');
+      const decipher = crypto.createDecipheriv('aes-128-cbc', 'qvbccqwV3yQhxnTr', 'qvbccqwV3yQhxnTr');
       decipher.setAutoPadding(false);
       const decodedBuf = decipher.update(content);
       const finalBuf = decipher.final();
       const decoded = Buffer.concat([decodedBuf, finalBuf]);
       console.log('decrypt complete');
       // padding
-      const padding1 = decoded.readUInt8(decoded.length - 1);
-      const padding2 = decoded.readUInt8(decoded.length - 2);
+      console.log('decoded length:', decoded.length);
+      let padding1 = 0;
+      let padding2 = 0;
+      if (decoded.length > 0) {
+        padding1 = decoded.readUInt8(decoded.length - 1);
+        padding2 = decoded.readUInt8(decoded.length - 2);
+      }
+      
       let padding = 0;
       if (padding1 > 1 && padding1 === padding2) {
         padding = padding1;
@@ -94,30 +134,30 @@ const decodeLog = (buf, skips) => {
       }
 
       // flush
-      let wstream = fs.createWriteStream('./log-demo.gz');
+      let wstream = fs.createWriteStream(logGZ);
       wstream.write(realContent);
       wstream.end();
       wstream.on('finish', () => {
         // unzip
         const unzip = zlib.createGunzip();
-        const inp = fs.createReadStream('./log-demo.gz');
-        const gout = fs.createWriteStream('./log-demo.txt', { flags: 'a' });
+        const inp = fs.createReadStream(logGZ);
+        const gout = fs.createWriteStream(logTxt, { flags: 'a' });
         inp.pipe(unzip).on('error', (err) => {
           console.log(err);
           // unzip error, continue recursion
-          fs.unlinkSync('./log-demo.gz')
-          decodeLog(buf, skips);
+          fs.unlinkSync(logGZ)
+          decodeLog(buf, skips, fileName);
         }).pipe(gout).on('finish', (src) => {
           console.log('write finish');
           // write complete, continue recursion
-          fs.unlinkSync('./log-demo.gz')
-          decodeLog(buf, skips);
+          fs.unlinkSync(logGZ)
+          decodeLog(buf, skips, fileName);
         }).on('error', (err) => {
           console.log(err);
         });
       });
     } else {
-      decodeLog(buf, skips);
+      decodeLog(buf, skips, fileName);
     }
   }
 };
